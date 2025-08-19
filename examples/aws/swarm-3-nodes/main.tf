@@ -36,6 +36,7 @@ resource "aws_security_group" "swarm_sg" {
   vpc_id      = data.aws_vpc.current.id
 }
 
+// Ingress rules
 # 1. SSH access
 resource "aws_vpc_security_group_ingress_rule" "ssh" {
   from_port         = 22
@@ -90,6 +91,14 @@ resource "aws_vpc_security_group_ingress_rule" "http_80" {
   cidr_ipv4         = var.open_cidr
   security_group_id = aws_security_group.swarm_sg.id
 }
+
+// Egress rules
+resource "aws_vpc_security_group_egress_rule" "all_traffic" {
+  ip_protocol = -1 # All
+  cidr_ipv4 = var.open_cidr
+  security_group_id = aws_security_group.swarm_sg.id
+}
+
 // Instance
 resource "aws_instance" "tf-swarm-node" {
   ami              = data.aws_ami.ubuntu_latest.id
