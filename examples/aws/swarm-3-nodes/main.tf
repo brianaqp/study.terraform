@@ -54,11 +54,20 @@ resource "aws_vpc_security_group_ingress_rule" "swarm_tcp_2377" {
   security_group_id = aws_security_group.swarm_sg.id
 }
 
-# Node communication TCP 7946 / UDP 7946
+# Node communication TCP 7946
 resource "aws_vpc_security_group_ingress_rule" "swarm_tcp_7946" {
   from_port         = 7946
   to_port           = 7946
-  ip_protocol       = "tcp/udp"
+  ip_protocol       = "tcp"
+  cidr_ipv4         = var.open_cidr
+  security_group_id = aws_security_group.swarm_sg.id
+}
+
+# UDP 7946
+resource "aws_vpc_security_group_ingress_rule" "swarm_udp_7946" {
+  from_port         = 7946
+  to_port           = 7946
+  ip_protocol       = "udp"
   cidr_ipv4         = var.open_cidr
   security_group_id = aws_security_group.swarm_sg.id
 }
@@ -87,6 +96,7 @@ resource "aws_instance" "tf-swarm-node" {
   instance_type    = var.instance_type
   user_data_base64 = base64encode(file("${path.module}/user_data.sh"))
   count            = 2
+  vpc_security_group_ids = [aws_security_group.swarm_sg.id]
 
   tags = {
     Name = "tf-testing-${count.index}"
