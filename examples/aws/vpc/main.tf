@@ -8,6 +8,7 @@ terraform {
 }
 
 // Network dependencies
+// Attach to the vpc to have general internet connectivity
 resource "aws_internet_gateway" "gw" {
   vpc_id = aws_vpc.main.id
 
@@ -16,7 +17,9 @@ resource "aws_internet_gateway" "gw" {
   }
 }
 
+
 // Network
+// Main VPC
 resource "aws_vpc" "main" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
@@ -25,10 +28,11 @@ resource "aws_vpc" "main" {
   }
 }
 
+// Just one subnet
 resource "aws_subnet" "public-1a" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "10.0.1.0/24"
-  map_public_ip_on_launch = false
+  map_public_ip_on_launch = true
   availability_zone_id    = "use2-az1"
 
   tags = {
@@ -36,26 +40,26 @@ resource "aws_subnet" "public-1a" {
   }
 }
 
-resource "aws_subnet" "public-2a" {
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.2.0/24"
-  map_public_ip_on_launch = false
-  availability_zone_id    = "use2-az1"
+// Add a route
+// Route table created 
+resource "aws_route_table" "public_rt" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.gw.id
+  }
 
   tags = {
-    Name = "public-2a"
+    Name = "public-route-table"
   }
 }
 
-// Security groups
-# resource "aws_vpc_security_group_egress_rule" "example" {
-#   security_group_id = aws_security_group.example.id
+resource "aws_route_table_association" "public_subnet_assoc" {
+  subnet_id      = aws_subnet.public-1a.id
+  route_table_id = aws_route_table.public_rt.id
+}
 
-#   cidr_ipv4   = "10.0.0.0/8"
-#   from_port   = 80
-#   ip_protocol = "tcp"
-#   to_port     = 80
-# }
 
 // EC2 instances
 data "aws_ami" "ubuntu" {
@@ -74,12 +78,12 @@ data "aws_ami" "ubuntu" {
   owners = ["099720109477"] # Canonical
 }
 
-# resource "aws_instance" "ec2_in_p1a" {
-#   ami           = data.aws_ami.ubuntu.id
-#   instance_type = "t3.micro"
-#   subnet_id = aws_subnet.public-1a.id
+resource "aws_instance" "ec2_in_p1a" {
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = "t3.micro"
+  subnet_id = aws_subnet.public-1a.id
 
-#   tags = {
-#     Name = "${aws_subnet.public-1a.tags.Name}"
-#   }
-# }
+  tags = {
+    Name = "${aws_subnet.public-1a.tags.Name}"
+  }
+}
