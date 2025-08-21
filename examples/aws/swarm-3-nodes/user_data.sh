@@ -4,7 +4,7 @@ set -e
 exec > >(tee /var/log/user-data.log) 2>&1
 
 apt-get update -y
-apt-get install -y ca-certificates curl apache2
+apt-get install -y ca-certificates curl
 
 install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
@@ -17,5 +17,3 @@ $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" \
 
 apt-get update -y
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-docker run hello-world || true

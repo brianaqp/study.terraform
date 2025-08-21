@@ -37,7 +37,7 @@ resource "aws_security_group" "swarm_sg" {
 }
 
 // Ingress rules
-# 1. SSH access
+# 1. SSH access. For develpment
 resource "aws_vpc_security_group_ingress_rule" "ssh" {
   from_port         = 22
   to_port           = 22
@@ -47,6 +47,7 @@ resource "aws_vpc_security_group_ingress_rule" "ssh" {
 }
 
 # Swarm management
+# Manager - Worker communication
 resource "aws_vpc_security_group_ingress_rule" "swarm_tcp_2377" {
   from_port         = 2377
   to_port           = 2377
@@ -56,6 +57,7 @@ resource "aws_vpc_security_group_ingress_rule" "swarm_tcp_2377" {
 }
 
 # Node communication TCP 7946
+# TCP node overlay discovery
 resource "aws_vpc_security_group_ingress_rule" "swarm_tcp_7946" {
   from_port         = 7946
   to_port           = 7946
@@ -65,6 +67,7 @@ resource "aws_vpc_security_group_ingress_rule" "swarm_tcp_7946" {
 }
 
 # UDP 7946
+# UDP for overlay network node discovery
 resource "aws_vpc_security_group_ingress_rule" "swarm_udp_7946" {
   from_port         = 7946
   to_port           = 7946
@@ -74,7 +77,7 @@ resource "aws_vpc_security_group_ingress_rule" "swarm_udp_7946" {
 }
 
 
-# Overlay network UDP 4789
+# overlay network traffic
 resource "aws_vpc_security_group_ingress_rule" "swarm_udp_4789" {
   from_port         = 4789
   to_port           = 4789
@@ -108,6 +111,18 @@ resource "aws_instance" "tf-swarm-node" {
   vpc_security_group_ids = [aws_security_group.swarm_sg.id]
 
   tags = {
-    Name = "tf-testing-${count.index}"
+    Name = "worker-${count.index}"
+  }
+}
+
+resource "aws_instance" "tf-swarm-Manager" {
+  ami = data.aws_ami.ubuntu_latest.id
+  instance_type = var.instance_type
+  user_data_base64 = base64encode(file("${path.module}/user_data.sh"))
+  vpc_security_group_ids = [ aws_security_group.swarm_sg.id ]
+  count = 1
+
+  tags = {
+    Name = "manager-${count.index}"
   }
 }
